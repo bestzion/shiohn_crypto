@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arkham Trading Log</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css"/>
+</head>
+<body>
+
+    <div class="info-container">
+        <div id="totalProfit" class="info-text total-profit">Total Profit: $0</div>
+        <div id="winRatio" class="info-text win-ratio">Win Ratio: 0%</div>
+    </div>
+
+    <div class="log-box" id="arkhamLogBox">Loading Arkham log...</div>
+
+    <div class="table-container">
+        <div id="paginationControls" class="pagination-controls"></div>
+        <table class="data-table" id="tradingDataTable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Position</th>
+                    <th>Price</th>
+                    <th>Deposit</th>
+                    <th>Profit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in trading_data %}
+                <tr>
+                    <td>{{ entry['time'] }}</td>
+                    <td>{{ entry['symbol'] }}</td>
+                    <td>{{ entry['position'] }}</td>
+                    <td>{{ entry['price'] }}</td>
+                    <td>{{ entry['profit'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function fetchLogData(logUrl, elementId, errorMessage) {
+            fetch(logUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error || !data.log) {
+                        document.getElementById(elementId).innerHTML = errorMessage;
+                    } else {
+                        document.getElementById(elementId).innerHTML = data.log.replace(/\n/g, '<br>'); // 줄 바꿈을 <br>로 변환
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById(elementId).innerHTML = errorMessage;
+                });
+        }
+
+        function fetchMMTradingData() {
+            fetch('/MM-trading-data')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('tradingDataTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    
+                    if (!data || data.error || data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="7">Empty data</td></tr>'; // 데이터가 없거나 오류가 있는 경우
+                    } else {
+                        // 데이터가 있는 경우, 테이블을 채움
+                        data.forEach(row => {
+                            let newRow = tableBody.insertRow();
+                            Object.keys(row).forEach((key) => {
+                                let cell = newRow.insertCell();
+                                cell.textContent = row[key];
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching MM trading data:', error);
+                    document.getElementById('tradingDataTable').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="5">Error fetching data.</td></tr>';
+                });
+        }
+
+        // 페이지 로드 시 로그 데이터를 가져옴
+        fetchLogData('/arkham-log', 'arkhamLogBox', 'Error fetching Arkham log data.');
+        fetchLogData('/trading-log', 'tradingLogBox', 'Error fetching Trading log data.');
+        fetchTradingData();
+    </script>
+</body>
+</html>

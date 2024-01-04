@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trading Bot Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css"/>
+</head>
+<body>
+
+    <div class="info-container">
+        <div id="totalProfit" class="info-text total-profit">Total Profit: $0</div>
+        <div id="winRatio" class="info-text win-ratio">Win Ratio: 0%</div>
+        <!-- Upbit_MM 버튼 추가 -->
+        <button id="MMButton" class="info-button" onclick="window.location.href='/arkham-log'">MM 데이터 보기</button>
+
+    </div>
+    
+
+    <div class="log-box" id="logBox">Loading log...</div>
+
+    <div class="table-container">
+        <div id="paginationControls" class="pagination-controls"></div>
+        <table class="data-table" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Symbol</th>
+                    <th>Position</th>
+                    <th>Price</th>
+                    <th>Profit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in trading_data %}
+                <tr>
+                    <td>{{ entry['time'] }}</td>
+                    <td>{{ entry['symbol'] }}</td>
+                    <td>{{ entry['position'] }}</td>
+                    <td>{{ entry['price'] }}</td>
+                    <td>{{ entry['profit'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function fetchData() {
+            fetch('/bot-output')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('totalProfit').innerHTML = 'Error fetching data.';
+                    } else {
+                        document.getElementById('totalProfit').innerHTML = 'Total Profit: ' + data.total_profit.toFixed(2) + '%';
+                        document.getElementById('winRatio').innerHTML = 'Win Ratio: ' + data.win_ratio.toFixed(2) + '%';
+                        // Handling for log content as before
+                        if (Array.isArray(data.log_content)) {
+                            const reversedLogContent = data.log_content.reverse();
+                            document.getElementById('logBox').innerHTML = reversedLogContent.map(line => `<p>${line}</p>`).join('');
+                        } else {
+                            document.getElementById('logBox').innerHTML = 'No log data available or there was an error.';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('logBox').innerHTML = 'Error fetching data. See console for details.';
+                });
+        }
+
+        document.getElementById('MMButton').addEventListener('click', function() {
+            fetchMMData();
+        });
+
+        function fetchMMData() {
+            // Upbit_MM 데이터를 서버로부터 가져오는 로직을 구현합니다.
+            // 예를 들어, fetch('/upbit-mm-data') 또는 비슷한 AJAX 요청을 사용할 수 있습니다.
+        }
+
+
+        let currentPage = 1;
+        const rowsPerPage = 15;
+
+        function fetchTableData(page = 1) {
+            fetch('/json-data')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+
+                    // Reverse the data array to display latest data at the top
+                    const paginatedData = data.reverse().slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+                    paginatedData.forEach(row => {
+                        let newRow = tableBody.insertRow();
+                        
+                        // Add cells in the correct order
+                        let timeCell = newRow.insertCell();
+                        timeCell.appendChild(document.createTextNode(row.time));
+
+                        let symbolCell = newRow.insertCell();
+                        symbolCell.appendChild(document.createTextNode(row.symbol));
+
+                        let positionCell = newRow.insertCell();
+                        positionCell.appendChild(document.createTextNode(row.position));
+                        if (row.position === 'Open') {
+                            positionCell.style.backgroundColor = 'lightcoral'; // Light red for 'Open'
+                        } else if (row.position === 'Close') {
+                            positionCell.style.backgroundColor = 'lightgreen'; // Light green for 'Close'
+                        }
+
+                        let priceCell = newRow.insertCell();
+                        priceCell.appendChild(document.createTextNode(row.price));
+
+                        let profitCell = newRow.insertCell();
+                        profitCell.appendChild(document.createTextNode(row.profit));
+                        if (row.profit !== 'N/A') {
+                            if (row.profit.startsWith('-')) {
+                                // Negative profit: red and bold
+                                profitCell.style.color = 'red';
+                                profitCell.style.fontWeight = 'bold';
+                            } else {
+                                // Positive profit: green and bold
+                                profitCell.style.color = 'green';
+                                profitCell.style.fontWeight = 'bold';
+                            }
+                        }
+                    });
+
+                    updatePaginationControls(data.length, page);
+                })
+                .catch(error => console.error('Error fetching table data:', error));
+        }
+
+
+        function updatePaginationControls(totalRows, currentPage) {
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            const paginationDiv = document.getElementById('paginationControls');
+            paginationDiv.innerHTML = '';
+
+            const prevButton = document.createElement('button');
+            prevButton.innerText = 'Previous';
+            prevButton.disabled = currentPage <= 1; // Disable if no previous page
+            prevButton.className = currentPage <= 1 ? 'inactive' : '';
+            prevButton.onclick = () => {
+                fetchTableData(currentPage - 1);
+                window.currentPage = currentPage - 1;
+            };
+
+            const nextButton = document.createElement('button');
+            nextButton.innerText = 'Next';
+            nextButton.disabled = currentPage >= totalPages; // Disable if no next page
+            nextButton.className = currentPage >= totalPages ? 'inactive' : '';
+            nextButton.onclick = () => {
+                fetchTableData(currentPage + 1);
+                window.currentPage = currentPage + 1;
+            };
+
+            paginationDiv.appendChild(prevButton);
+            paginationDiv.appendChild(nextButton);
+        }
+
+
+        // Call fetchData on page load and set interval for auto-refresh
+        fetchData();
+        fetchTableData(currentPage);
+        setInterval(fetchData, 30000); // Refresh every 30 seconds
+        setInterval(fetchChartData, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>
