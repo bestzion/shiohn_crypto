@@ -1,0 +1,65 @@
+{
+  "transfer": {
+    "id": "0x111",
+    "transactionHash": "0x222",
+    "fromAddress": {
+      "address": "0x333",
+      "chain": "ethereum",
+      "arkhamEntity": {
+        "name": "BlockBank",
+        "note": "Investing in blocks since 2024",
+        "id": "bbank",
+        "type": "fund",
+        "service": null,
+        "addresses": null,
+        "website": "https://block.bank"
+      },
+      "arkhamLabel": {
+        "name": "BlockBank Fund 1",
+        "address": "0x333",
+        "chainType": "evm"
+      },
+      "isUserAddress": false,
+      "contract": true
+    },
+    "fromIsContract": true,
+    "toAddress": {
+      "address": "0x444",
+      "chain": "ethereum",
+      "arkhamEntity": {
+        "name": "Chainance",
+        "note": "Cross-chain chain provider",
+        "id": "chainance",
+        "type": "dex",
+        "service": null,
+        "addresses": null,
+        "website": "https://chainance.org",
+        "twitter": "https://twitter.com/chainance",
+        "crunchbase": "https://www.crunchbase.com/organization/chainance",
+        "linkedin": "https://www.linkedin.com/company/chainance"
+      },
+      "arkhamLabel": {
+        "name": "Chainance Primary",
+        "address": "0x444",
+        "chainType": "evm"
+      },
+      "isUserAddress": false,
+      "contract": true
+    },
+    "toIsContract": true,
+    "tokenAddress": "0xT0KEN",
+    "type": "token",
+    "blockTimestamp": "2023-08-23T22:26:35Z",
+    "blockNumber": 16980384,
+    "blockHash": "0x555",
+    "tokenName": "ABCD Coin",
+    "tokenSymbol": "ABCD",
+    "tokenDecimals": 6,
+    "unitValue": 1500.003,
+    "tokenId": "usd-coin",
+    "historicalUSD": 4299.1,
+    "chain": "ethereum"
+  },
+  "alertName": "Upbit MM New",
+  "id": 40789
+}
