@@ -60,11 +60,11 @@ def get_last_25_log_lines():
             # Filter out Flask HTTP request log lines
             filtered_lines = [line for line in log_lines if not "BAD_REQUEST" in line and not "HTTP" in line and not "GET /" in line and not "POST /" in line and "ERROR" not in line]
 
-            # Get the last 25 lines after filtering
-            last_25_lines = filtered_lines[-25:]
+            # Get the last 60 lines after filtering
+            last_60_lines = filtered_lines[-60:]
 
             # Extract the message part from each line
-            extracted_messages = [line.split(' - ')[-1].strip() for line in last_25_lines]
+            extracted_messages = [line.split(' - ')[-1].strip() for line in last_60_lines]
             return extracted_messages
     except Exception as e:
         print(f"Error reading log file: {e}")
@@ -83,7 +83,7 @@ def bot_output():
     try:
         total_profit = calculate_total_profit()
         win_ratio = calculate_win_ratio()
-        log_content = get_last_25_log_lines()  # Assuming this function is already defined
+        log_content = get_last_25_log_lines()
 
         response_data = {'total_profit': total_profit, 'win_ratio': win_ratio, 'log_content': log_content}
         return jsonify(response_data)
@@ -109,8 +109,70 @@ def json_data():
         return jsonify({'error': 'An error occurred fetching JSON data'})
 
 
+# ------------------------------------------------------
 
 
+def calculate_total_profit_MM():
+    total_profit = 0.0
+
+    try:
+        with open('/home/ubuntu/Trading/Ubpit/trading.log', 'r') as file:
+            for line in file:
+                data = json.loads(line)
+                profit_str = data.get('profit')
+                if profit_str and profit_str != 'N/A':
+                    # Remove '%' and convert to float. This handles negative numbers as well.
+                    profit_percent = float(profit_str.strip('%'))
+                    total_profit += profit_percent
+    except Exception as e:
+        print(f"Error reading json_bot.log: {e}")
+
+    return total_profit
+
+def calculate_win_ratio_MM():
+    win_count = 0
+    total_count = 0
+
+    with open('/home/ubuntu/Trading/Upbit/trading.log', 'r') as file:
+        for line in file:
+            data = json.loads(line)
+            if data["position"] == "Close" and data["profit"] != "N/A":
+                total_count += 1
+                profit = float(data["profit"].strip('%'))
+                if profit > 0:
+                    win_count += 1
+
+    win_ratio = (win_count / total_count) * 100 if total_count > 0 else 0
+    return win_ratio
+
+
+def get_last_300_log_lines_MM():
+    try:
+        with open('/home/ubuntu/Trading/Upbit/arkham.log', 'r') as file:
+            log_lines = file.readlines()
+
+            # Filter out Flask HTTP request log lines
+            filtered_lines = [line for line in log_lines]
+
+            # Get the last 60 lines after filtering
+            last_300_lines = filtered_lines[-300:]
+
+            # Process each line to adjust the timestamp format
+            processed_lines = []
+            for line in last_300_lines:
+                if "MM Deposit:" in line:
+                    # Extract and reformat the timestamp
+                    parts = line.split('|', 2)
+                    if len(parts) > 2:
+                        timestamp_part = parts[0].strip()
+                        formatted_timestamp = timestamp_part.split(',')[0]  # Keep only up to minutes
+                        new_line = f"{formatted_timestamp} | {parts[2]}"
+                        processed_lines.append(new_line)
+            
+            return processed_lines
+    except Exception as e:
+        print(f"Error reading log file: {e}")
+        return []
 
 def parse_log_line(line):
     # 로그 라인을 파싱해서 필요한 정보를 추출하는 함수를 구현해야 합니다.
@@ -127,16 +189,34 @@ def parse_log_line(line):
         'profit': data.get('profit', '')
     }
 
+def get_paginated_trading_data_MM(page, per_page):
+    try:
+        with open('/home/ubuntu/Trading/Upbit/trading.log', 'r') as file:
+            log_entries = [json.loads(line.strip()) for line in file.readlines()]
+            start = (page - 1) * per_page
+            end = start + per_page
+            return log_entries[start:end]
+    except Exception as e:
+        print(f"Error reading JSON trading log file: {e}")
+        return []
+
 
 @app.route('/arkham-log')
-def arkham_log():
+def arkham_log_data():
     try:
-        with open('/home/ubuntu/Trading/Upbit/arkham.log', 'r') as file:
-            content = file.readlines()  # 파일의 모든 라인을 읽습니다.
-        return render_template('/home/ubuntu/Trading/Web/templates/MM.html', lines=content)  # 'arkham.html' 템플릿과 로그 라인들을 렌더링합니다.
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500  # 에러 발생 시 에러 메시지와 함께 500 상태 코드 반환
+        total_profit_MM = calculate_total_profit_MM()
+        win_ratio_MM = calculate_win_ratio_MM()
+        log_content_MM = get_last_300_log_lines_MM()
 
+        response_data_MM = {
+            'total_profit_MM': total_profit_MM, 
+            'win_ratio_MM': win_ratio_MM, 
+            'log_content_MM': log_content_MM
+        }
+        return jsonify(response_data_MM)
+    except Exception as e:
+        print(f"Error in arkham_log_data: {e}")
+        return jsonify({'error': 'An error occurred fetching arkham log data'})
 
 @app.route('/MM-trading-data')
 def mm_trading_data():
@@ -149,6 +229,14 @@ def mm_trading_data():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/mm-page')  # The URL endpoint for MM.html
+def mm_page():
+    page = request.args.get('page', 1, type=int)
+    per_page = 15  # You can adjust the number of entries per page as needed
+    trading_data_MM = get_paginated_trading_data_MM(page, per_page)  # This function should be defined to fetch MM data
+
+    # Render the MM.html template and pass the initial data
+    return render_template('MM.html', trading_data_MM=trading_data_MM, current_page=page)
 
 
 if __name__ == '__main__':
