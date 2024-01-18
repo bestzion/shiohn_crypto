@@ -4,6 +4,34 @@ import json
 
 app = Flask(__name__)
 
+# Change log data
+change_log = [
+    {"date": "2024-01-15", "event": "LQTY Volume Trade Bot Stopped"},
+    {"date": "2023-12-28", "event": "LQTY Volume Trade Bot Initiated"}
+]
+
+
+def get_chart_data():
+    chart_data = {'times': [], 'profits': []}
+    current_profit = 0  # Start at $0
+    with open('/home/ubuntu/Trading/Volume/json_bot.log', 'r') as file:
+        for line in file:
+            data = json.loads(line)
+            if data["position"] == "Close":
+                profit = float(data["profit"].strip('%'))
+                current_profit += profit * 50 / 100  # Calculate profit and accumulate
+                chart_data["times"].append(data["time"])
+                chart_data["profits"].append(current_profit)
+    return chart_data
+
+@app.route('/chart-data')
+def chart_data():
+    try:
+        return jsonify(get_chart_data())
+    except Exception as e:
+        print(f"Error generating chart data: {e}")
+        return jsonify({'error': 'An error occurred fetching chart data'})
+
 
 def calculate_total_profit():
     total_profit = 0.0
@@ -75,7 +103,7 @@ def index():
     page = request.args.get('page', 1, type=int)
     per_page = 15  # Number of entries per page
     trading_data = get_paginated_trading_data(page, per_page)
-    return render_template('index.html', trading_data=trading_data, current_page=page)
+    return render_template('index.html', trading_data=trading_data, current_page=page, change_log=change_log)
 
 
 @app.route('/bot-output')
@@ -236,7 +264,7 @@ def mm_page():
     trading_data_MM = get_paginated_trading_data_MM(page, per_page)  # This function should be defined to fetch MM data
 
     # Render the MM.html template and pass the initial data
-    return render_template('MM.html', trading_data_MM=trading_data_MM, current_page=page)
+    return render_template('MM.html', trading_data_MM=trading_data_MM, current_page=page, change_log=change_log)
 
 
 if __name__ == '__main__':
