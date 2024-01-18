@@ -1,0 +1,168 @@
+.info-container {
+    display: flex;
+    align-items: center; /* This will vertically center align items */
+    justify-content: space-between; /* Align items to the start of the container */
+    font-size: 24px; /* Adjust as needed */
+    font-weight: bold; /* Makes text bold */
+    margin-top: 20px; /* Top margin */
+    margin-bottom: 30px; /* Bottom margin */
+    margin-left: 135px;
+}
+
+/* Additional container for the 'Total Profit' and 'Win Ratio' to stick together */
+.info-group {
+    display: flex;
+    gap: 20px; /* Spacing between 'Total Profit' and 'Win Ratio' */
+}
+
+
+.info-text {
+    margin-right: 10px; /* Adds space between the items */
+    /* padding: 10px; */
+    /* Additional shared styles */
+}
+
+/* Right-aligned button container */
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.info-button {
+    background-color: #828282; /* Green background */
+    color: white; /* White text */
+    padding: 10px 20px; /* Top and bottom padding of 10px, left and right padding of 20px */
+    border: none; /* No border */
+    border-radius: 6px; /* Rounded corners */
+    cursor: pointer; /* Cursor changes to pointer when hovering over the button */
+    transition: background-color 0.3s; /* Smooth transition for background color change on hover */
+    font-size: 16px; /* Font size of button text */
+    margin-right: 135px; /* Left margin to separate it from other elements */
+}
+
+.info-button:hover {
+    background-color: #1331f2; /* Slightly darker green when hovered */
+}
+
+
+.chart-container {
+    max-width: 1800px; /* Adjust the width as needed */
+    margin: 20px auto; /* This centers the chart in the middle of the page and adds some vertical space */
+    padding: 15px;
+    background-color: #fff; /* Optional: Change color as needed */
+    border: 1px solid #ddd; /* Optional: Adds a border around the chart */
+    border-radius: 5px; /* Optional: Rounds the corners of the border */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Adds a slight shadow for depth */
+}
+
+canvas {
+    width: 100% !important; /* Ensures the canvas fills the container width */
+    height: auto !important; /* Optional: Adjusts the height to maintain aspect ratio */
+}
+
+
+.total-profit {
+    color: green;
+    margin-right: 20px;
+    /* Other unique styles for total profit */
+}
+
+.win-ratio {
+    color: blue; /* Or any other color you prefer for win ratio */
+    /* Other unique styles for win ratio */
+}
+
+.log-box {
+    border: 2px solid #000; /* Distinct, black border */
+    padding: 15px; /* Padding inside the box */
+    margin-top: 20px auto;
+    margin-bottom: 40px; /* Added bottom margin for spacing */
+    width: 80%;
+    height: 400px; /* Increased height */
+    overflow-y: auto;
+    text-align: left; /* Align text to the left */
+    background-color: #f8f8f8; /* Light background color for readability */
+    font-family: 'Courier New', Courier, monospace; /* Monospaced font for log output */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.log-box p {
+    margin: 6px 0;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee; /* Subtle line between entries */
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.data-table, .data-table th, .data-table td {
+    border: 1px solid black;
+}
+
+.data-table th, .data-table td {
+    padding: 8px;
+    text-align: center;
+}
+
+.table-container {
+    width: 80%;
+    margin-top: 60px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative; /* Needed for absolute positioning inside */
+}
+
+
+.pagination-controls {
+    position: absolute;
+    top: -40px; /* Adjust this value as needed */
+    right: 0;
+    text-align: right;
+}
+
+button.inactive {
+    color: #888; /* Grayed out color */
+    background-color: #ccc; /* Light gray background */
+    border-color: #888; /* Grayed border */
+}
+
+button {
+    cursor: pointer; /* Change cursor on hover */
+    padding: 5px 10px; /* Padding inside the button */
+    margin: 0 5px; /* Space between buttons */
+}
+
+button:disabled {
+    cursor: not-allowed; /* Cursor to indicate disabled state */
+}
+
+.change-log-container {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    flex-direction: column; /* Stack children vertically */
+    margin-top: 50px;
+    width: 60%;
+    padding: 15px;
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.change-log-container h2 {
+    color: #000000;
+}
+
+#changeLog li {
+    margin-bottom: 10px;
+    margin-top: 5px;
+    line-height: 1.6;
+}
