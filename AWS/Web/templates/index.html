@@ -7,11 +7,19 @@
 <body>
 
     <div class="info-container">
-        <div id="totalProfit" class="info-text total-profit">Total Profit: $0</div>
-        <div id="winRatio" class="info-text win-ratio">Win Ratio: 0%</div>
-        <!-- Upbit_MM 버튼 추가 -->
-        <button id="MMButton" class="info-button" onclick="window.location.href='/arkham-log'">MM 데이터 보기</button>
+        <div class="info-group"> 
+            <div id="totalProfit" class="info-text total-profit">Total Profit: $0</div>
+            <div id="winRatio" class="info-text win-ratio">Win Ratio: 0%</div>
+        </div>
 
+        <div class="button-container">
+            <!-- Upbit_MM 버튼 추가 -->
+            <button id="MMButton" class="info-button" onclick="window.location.href='/mm-page'">MM 데이터 보기</button>
+        </div>
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="profitChart"></canvas>
     </div>
     
 
@@ -43,8 +51,70 @@
         </table>
     </div>
 
+    <div class="change-log-container">
+        <h2>Change Log</h2>
+        <ul id="changeLog">
+            {% for log_entry in change_log %}
+                <li>{{ log_entry.date }}, {{ log_entry.event }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+
+        fetch('/chart-data')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('profitChart').getContext('2d');
+                const profitChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.times,
+                        datasets: [{
+                            label: 'Profit Over Time',
+                            data: data.profits,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    tooltipFormat: 'll' // Tooltip format using moment.js
+                                },
+                                distribution: 'linear'
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true,
+                                    callback: function(value, index, values){
+                                        return '$' + value.toFixed(2);
+                                    }
+                                }
+                            }]
+                        },
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        hover: {
+                            mode: 'nearest',
+                            intersect: true
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching chart data:', error);
+            });
+
+
+
         function fetchData() {
             fetch('/bot-output')
                 .then(response => response.json())
@@ -72,11 +142,6 @@
         document.getElementById('MMButton').addEventListener('click', function() {
             fetchMMData();
         });
-
-        function fetchMMData() {
-            // Upbit_MM 데이터를 서버로부터 가져오는 로직을 구현합니다.
-            // 예를 들어, fetch('/upbit-mm-data') 또는 비슷한 AJAX 요청을 사용할 수 있습니다.
-        }
 
 
         let currentPage = 1;
