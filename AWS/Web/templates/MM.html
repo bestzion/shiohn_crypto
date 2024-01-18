@@ -7,14 +7,21 @@
 <body>
 
     <div class="info-container">
-        <div id="totalProfit" class="info-text total-profit">Total Profit: $0</div>
-        <div id="winRatio" class="info-text win-ratio">Win Ratio: 0%</div>
+        <div class="info-group"> 
+            <div id="totalProfit_MM" class="info-text total-profit">Total Profit: $0</div>
+            <div id="winRatio_MM" class="info-text win-ratio">Win Ratio: 0%</div>
+        </div>
+
+        <div class="button-container">
+            <!-- Button to go back to index.html -->
+            <button id="backButton" class="info-button" onclick="window.location.href='/'">Volume 데이터 보기</button>
+        </div> 
     </div>
 
-    <div class="log-box" id="arkhamLogBox">Loading Arkham log...</div>
+    <div class="log-box" id="arkhamLogBox_MM">Loading Arkham log...</div>
 
     <div class="table-container">
-        <div id="paginationControls" class="pagination-controls"></div>
+        <div id="mmPaginationControls" class="pagination-controls"></div>
         <table class="data-table" id="tradingDataTable">
             <thead>
                 <tr>
@@ -32,8 +39,10 @@
                 <tr>
                     <td>{{ entry['time'] }}</td>
                     <td>{{ entry['symbol'] }}</td>
+                    <td>{{ entry['side'] }}</td>
                     <td>{{ entry['position'] }}</td>
                     <td>{{ entry['price'] }}</td>
+                    <td>{{ entry['deposit'] }}</td>
                     <td>{{ entry['profit'] }}</td>
                 </tr>
                 {% endfor %}
@@ -41,54 +50,138 @@
         </table>
     </div>
 
+    <div class="change-log-container">
+        <h2>Change Log</h2>
+        <ul id="changeLog">
+            {% for log_entry in change_log %}
+                <li>{{ log_entry.date }}, {{ log_entry.event }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        function fetchLogData(logUrl, elementId, errorMessage) {
-            fetch(logUrl)
+
+        function fetchMMData() {
+            fetch('/arkham-log')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.error || !data.log) {
-                        document.getElementById(elementId).innerHTML = errorMessage;
+                    if (data.error) {
+                        document.getElementById('totalProfit_MM').innerHTML = 'Error fetching data.';
                     } else {
-                        document.getElementById(elementId).innerHTML = data.log.replace(/\n/g, '<br>'); // 줄 바꿈을 <br>로 변환
+                        document.getElementById('totalProfit_MM').innerHTML = 'Total Profit: ' + data.total_profit_MM.toFixed(2) + '%';
+                        document.getElementById('winRatio_MM').innerHTML = 'Win Ratio: ' + data.win_ratio_MM.toFixed(2) + '%';
+                        // Handling for log content as before
+                        if (Array.isArray(data.log_content_MM)) {
+                            const reversedLogContent_MM = data.log_content_MM.reverse();
+                            document.getElementById('arkhamLogBox_MM').innerHTML = reversedLogContent_MM.map(line => `<p>${line}</p>`).join('');
+                        } else {
+                            document.getElementById('arkhamLogBox_MM').innerHTML = 'No log data available or there was an error.';
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    document.getElementById(elementId).innerHTML = errorMessage;
+                    document.getElementById('arkhamLogBox_MM').innerHTML = 'Error fetching data. See console for details.';
                 });
         }
 
-        function fetchMMTradingData() {
-            fetch('/MM-trading-data')
+
+        let currentPageMM = 1;
+        const rowsPerPageMM = 15;
+
+
+        function fetchMMTradingData(page = 1) {
+            fetch('/MM-trading-data?page=' + page + '&perPage=' + rowsPerPageMM)
                 .then(response => response.json())
                 .then(data => {
                     const tableBody = document.getElementById('tradingDataTable').getElementsByTagName('tbody')[0];
                     tableBody.innerHTML = ''; // Clear existing rows
-                    
+
                     if (!data || data.error || data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="7">Empty data</td></tr>'; // 데이터가 없거나 오류가 있는 경우
+                        tableBody.innerHTML = '<tr><td colspan="7">Empty data</td></tr>';
                     } else {
-                        // 데이터가 있는 경우, 테이블을 채움
                         data.forEach(row => {
                             let newRow = tableBody.insertRow();
-                            Object.keys(row).forEach((key) => {
+                            let keys = ['time', 'symbol', 'side', 'position', 'price', 'MM Deposit', 'profit'];
+                            
+                            keys.forEach(key => {
                                 let cell = newRow.insertCell();
-                                cell.textContent = row[key];
+                                cell.textContent = row[key] || '';
+                                
+                                // Apply styles to 'Side' column based on the data
+                                if (key === 'side') {
+                                    if (row[key] === 'Short') {
+                                        cell.style.backgroundColor = 'red';
+                                        cell.style.fontWeight = 'bold';
+                                    } else if (row[key] === 'Long') {
+                                        cell.style.backgroundColor = 'green';
+                                        cell.style.fontWeight = 'bold';
+                                    }
+                                }
+
+                                // Apply styles to 'Position' column based on the data
+                                if (key === 'position') {
+                                    if ((row[key] === 'Open' && row['side'] === 'Long') || (row[key] === 'Close' && row['side'] === 'Short')) {
+                                        cell.style.color = 'green';
+                                        cell.style.fontWeight = 'bold';
+                                    } else if ((row[key] === 'Close' && row['side'] === 'Long') || (row[key] === 'Open' && row['side'] === 'Short')) {
+                                        cell.style.color = 'red';
+                                        cell.style.fontWeight = 'bold';
+                                    }
+                                }
                             });
                         });
                     }
+                    updatePaginationControlsMM(data.totalRows, page);
                 })
                 .catch(error => {
                     console.error('Error fetching MM trading data:', error);
-                    document.getElementById('tradingDataTable').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="5">Error fetching data.</td></tr>';
+                    document.getElementById('tradingDataTable').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="7">Error fetching data.</td></tr>';
                 });
         }
 
-        // 페이지 로드 시 로그 데이터를 가져옴
-        fetchLogData('/arkham-log', 'arkhamLogBox', 'Error fetching Arkham log data.');
-        fetchLogData('/trading-log', 'tradingLogBox', 'Error fetching Trading log data.');
-        fetchTradingData();
+
+        function updatePaginationControlsMM(totalRows, currentPage) {
+            const totalPages = Math.ceil(totalRows / rowsPerPageMM);
+            const paginationDiv = document.getElementById('mmPaginationControls');
+            paginationDiv.innerHTML = '';
+
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.innerText = 'Previous';
+            prevButton.disabled = currentPage <= 1;
+            prevButton.className = currentPage <= 1 ? 'inactive' : '';
+            prevButton.onclick = () => {
+                currentPageMM = currentPage - 1;
+                fetchMMTradingData(currentPageMM);
+            };
+
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.innerText = 'Next';
+            nextButton.disabled = currentPage >= totalPages;
+            nextButton.className = currentPage >= totalPages ? 'inactive' : '';
+            nextButton.onclick = () => {
+                currentPageMM = currentPage + 1;
+                fetchMMTradingData(currentPageMM);
+            };
+
+            // Append buttons to the pagination div
+            paginationDiv.appendChild(prevButton);
+            paginationDiv.appendChild(nextButton);
+        }
+
+
+
+    // Call fetchMMData on page load to fetch and display log and trading data
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchMMData();
+        fetchMMTradingData();
+        setInterval(fetchMMData, 30000); // Refresh every 30 seconds
+        setInterval(fetchMMTradingData, 30000); // Refresh every 30 seconds
+    });
+
     </script>
 </body>
 </html>
